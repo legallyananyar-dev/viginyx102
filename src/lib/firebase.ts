@@ -9,10 +9,13 @@ const firebaseConfig = {
   storageBucket: "viginyx-21488.firebasestorage.app",
   messagingSenderId: "172611303385",
   appId: "1:172611303385:web:402b8bfe968321fc8f8bc8",
-  measurementId: "G-XVXE9WRV7W",
 };
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
+if (!firebaseConfig.apiKey || firebaseConfig.apiKey.length < 20) {
+  throw new Error("Firebase is not configured with a valid API key.");
+}
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
