@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 // ECG pulse SVG path - the signature element
@@ -63,13 +64,22 @@ function StatCard({
 }
 
 export default function LandingPage() {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
+  const [patientCode, setPatientCode] = useState("");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const openPatientCheckIn = () => {
+    const normalizedCode = patientCode.trim().toUpperCase();
+    if (!normalizedCode) return;
+
+    router.push(`/vigiroom?code=${encodeURIComponent(normalizedCode)}`);
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAF8] text-[#0D1F17] font-sans">
@@ -97,13 +107,13 @@ export default function LandingPage() {
               href="/login"
               className="text-sm font-semibold text-[#1B4332]/70 hover:text-[#1B4332] transition-colors"
             >
-              Sign in
+              Pharmacist Sign in
             </Link>
             <Link
               href="/login"
               className="h-9 px-4 rounded-lg bg-[#1B4332] text-white text-sm font-bold hover:bg-[#0D1F17] transition-colors shadow-sm"
             >
-              Get Access
+              Pharmacist Access
             </Link>
           </div>
         </div>
@@ -131,6 +141,29 @@ export default function LandingPage() {
             pharmacists — structured ADR capture, real-time drug lookup, and
             PVPI-aligned reporting. Without the paperwork.
           </p>
+
+          <div className="bg-white rounded-2xl border border-[#1B4332]/10 shadow-sm p-4 mb-8 max-w-lg">
+            <div className="text-[10px] font-black uppercase tracking-widest text-[#1B4332]/50 mb-2">
+              Patient Check-in
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={patientCode}
+                onChange={(e) => setPatientCode(e.target.value.toUpperCase())}
+                placeholder="Enter your 6-character code"
+                className="h-12 flex-1 px-4 rounded-xl border border-[#1B4332]/10 bg-[#F4F7F6] text-sm font-semibold text-[#0D1F17] uppercase tracking-widest focus:outline-none focus:border-[#1B4332]"
+              />
+              <button
+                type="button"
+                onClick={openPatientCheckIn}
+                disabled={patientCode.trim().length < 4}
+                className="h-12 px-5 rounded-xl bg-[#1B4332] text-white text-sm font-black hover:bg-[#0D1F17] transition-colors disabled:opacity-40"
+              >
+                Patient Login
+              </button>
+            </div>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Link

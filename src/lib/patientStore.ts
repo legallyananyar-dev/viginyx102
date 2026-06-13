@@ -82,6 +82,18 @@ export async function fetchPatients(ownerEmail: string): Promise<PatientRecord[]
   );
 }
 
+export async function fetchPatientByCode(code: string): Promise<PatientRecord | null> {
+  const normalizedCode = code.trim().toUpperCase();
+  if (!normalizedCode) return null;
+
+  const snapshot = await getDocs(
+    query(collection(db, PATIENTS_COLLECTION), where("code", "==", normalizedCode)),
+  );
+
+  const target = snapshot.docs[0];
+  return target ? normalizeRecord(target.id, target.data()) : null;
+}
+
 export function subscribeToPatients(
   ownerEmail: string,
   onChange: (patients: PatientRecord[]) => void,
@@ -123,6 +135,28 @@ export async function updatePatientRecord(
     query(collection(db, PATIENTS_COLLECTION), where("ownerEmail", "==", ownerEmail)),
   );
   const target = snapshot.docs.find((entry) => entry.data().code === code);
+
+  if (!target) return null;
+
+  await updateDoc(doc(db, PATIENTS_COLLECTION, target.id), {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+
+  return target.id;
+}
+
+export async function updatePatientByCode(
+  code: string,
+  updates: Partial<Omit<PatientPayload, "id" | "ownerEmail">>,
+) {
+  const normalizedCode = code.trim().toUpperCase();
+  if (!normalizedCode) return null;
+
+  const snapshot = await getDocs(
+    query(collection(db, PATIENTS_COLLECTION), where("code", "==", normalizedCode)),
+  );
+  const target = snapshot.docs[0];
 
   if (!target) return null;
 

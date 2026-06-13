@@ -3,10 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { useSearchParams } from "next/navigation";
 import {
   createPatientRecord,
+  fetchPatientByCode,
   subscribeToPatients,
   updatePatientRecord,
+  updatePatientByCode,
   type Answer,
   type PatientRecord,
 } from "@/lib/patientStore";
@@ -110,6 +113,7 @@ function StatusBadge({ status }: { status: Patient["status"] }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function VigiRoom() {
+  const searchParams = useSearchParams();
   const [role, setRole] = useState<Role>(null);
   const [screen, setScreen] = useState<Screen>("landing");
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -144,6 +148,30 @@ export default function VigiRoom() {
       setOwnerEmail(user?.email?.toLowerCase() || "mvp@viginyx.local");
     });
   }, []);
+
+  useEffect(() => {
+    const codeFromUrl = searchParams.get("code");
+    if (!codeFromUrl) return;
+
+    let isMounted = true;
+
+    fetchPatientByCode(codeFromUrl)
+      .then((found) => {
+        if (!isMounted || !found) return;
+        setPatientFound(found as Patient);
+        initChat(found as Patient);
+        setScreen("patient-chat");
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setLoginError("Invalid code. Please check with your pharmacist.");
+        setScreen("patient-login");
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [searchParams]);
 
   useEffect(() => {
     const unsubscribe = subscribeToPatients(ownerEmail, (nextPatients) => {
@@ -186,15 +214,23 @@ export default function VigiRoom() {
 
   // ── Patient login ──────────────────────────────────────────────────────────
   const handlePatientLogin = () => {
-    const found = patients.find((p) => p.code === patientCode.toUpperCase().trim());
-    if (found) {
-      setPatientFound(found);
-      setLoginError("");
-      initChat(found);
-      setScreen("patient-chat");
-    } else {
-      setLoginError("Invalid code. Please check with your pharmacist.");
-    }
+    const normalizedCode = patientCode.toUpperCase().trim();
+
+    fetchPatientByCode(normalizedCode)
+      .then((found) => {
+        if (!found) {
+          setLoginError("Invalid code. Please check with your pharmacist.");
+          return;
+        }
+
+        setPatientFound(found as Patient);
+        setLoginError("");
+        initChat(found as Patient);
+        setScreen("patient-chat");
+      })
+      .catch(() => {
+        setLoginError("Invalid code. Please check with your pharmacist.");
+      });
   };
 
   // ── Init chat with first question ──────────────────────────────────────────
@@ -233,6 +269,10 @@ export default function VigiRoom() {
       ...prev,
       { role: "patient", text: userText, ts: new Date() },
     ]);
+
+    await updatePatientByCode(patientFound.code, {
+      answers: updatedAnswers,
+    });
 
     const nextQ = currentQ + 1;
     setCurrentQ(nextQ);
@@ -286,6 +326,11 @@ Keep it warm, simple, and under 80 words total.`,
           status: finalStatus,
           answers: updatedAnswers,
           summary: botReply,
+        });
+        await updatePatientByCode(patientFound.code, {
+          status: finalStatus,
+          summary: botReply,
+          answers: updatedAnswers,
         });
       } catch {
         setMessages((prev) => [
