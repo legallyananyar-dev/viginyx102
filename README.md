@@ -22,11 +22,42 @@ Viginyx is a mobile-first, professional web application designed for Indian comm
 npm install
 ```
 
-### 2. Run the Development Server
+### 2. Configure Environment Variables
+Create a local `.env.local` file from `.env.example` and paste your Firebase values.
+
+```bash
+cp .env.example .env.local
+```
+
+### 3. Run the Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+## 🔥 Firebase Setup
+
+VigiRoom now uses Firebase Auth and Firestore so patient registrations and ADR check-ins persist across logins.
+
+1. Enable **Email/Password** sign-in in Firebase Authentication.
+2. Create a **Cloud Firestore** database.
+3. Add the Firebase client values to `.env.local` and to Vercel environment variables.
+4. Use a Firestore security rule that allows authenticated users to read/write their own records.
+
+Recommended collection: `patient_records`
+
+Suggested document fields:
+- `ownerEmail`
+- `code`
+- `name`
+- `age`
+- `drug`
+- `phone`
+- `registeredAt`
+- `status`
+- `answers`
+- `summary`
+- `updatedAt`
 
 ---
 
