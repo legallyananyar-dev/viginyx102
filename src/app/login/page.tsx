@@ -1,11 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
-// Demo credentials for pitchathon
 const DEMO_CREDENTIALS = {
   email: "demo@viginyx.in",
   password: "Viginyx@2026",
@@ -29,36 +34,41 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 900)); // realistic delay
+    try {
+      if (mode === "login") {
+        if (!email.trim() || !password.trim()) {
+          throw new Error("Please enter your email and password.");
+        }
 
-    if (mode === "login") {
-      if (
-        email === DEMO_CREDENTIALS.email &&
-        password === DEMO_CREDENTIALS.password
-      ) {
-        // success — redirect to app
+        await signInWithEmailAndPassword(auth, email.trim(), password);
         router.push("/portal");
-      } else if (email && password) {
-        // for pitchathon: accept any filled credentials as "registered"
-        router.push("/portal");
-      } else {
-        setError("Please enter your email and password.");
-        setLoading(false);
+        return;
       }
-    } else {
-      // signup mode
+
       if (!name.trim() || !email.trim() || !password.trim()) {
-        setError("Please fill in all required fields.");
-        setLoading(false);
-        return;
+        throw new Error("Please fill in all required fields.");
       }
+
       if (password.length < 8) {
-        setError("Password must be at least 8 characters.");
-        setLoading(false);
-        return;
+        throw new Error("Password must be at least 8 characters.");
       }
-      // mock success — redirect
+
+      const credential = await createUserWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password,
+      );
+
+      await updateProfile(credential.user, { displayName: name.trim() });
       router.push("/portal");
+    } catch (submissionError) {
+      setError(
+        submissionError instanceof Error
+          ? submissionError.message
+          : "Unable to sign in with Firebase. Check the Firebase Auth project settings.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,7 +80,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#F9FAF8] flex flex-col">
-      {/* Top bar */}
       <div className="h-14 px-5 flex items-center justify-between border-b border-[#1B4332]/8 bg-white/80 backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-2">
           <Image
@@ -90,10 +99,8 @@ export default function LoginPage() {
         </Link>
       </div>
 
-      {/* Main */}
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm flex flex-col gap-5">
-          {/* Header */}
           <div className="text-center">
             <Image
               src="/viginyx-wordmark.png"
@@ -113,7 +120,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Demo hint */}
           {mode === "login" && showDemoHint && (
             <button
               type="button"
@@ -144,33 +150,30 @@ export default function LoginPage() {
             </button>
           )}
 
-          {/* Toggle tabs */}
           <div className="flex bg-[#F0F4F2] rounded-xl p-1 gap-1">
-            {(["login", "signup"] as Mode[]).map((m) => (
+            {(["login", "signup"] as Mode[]).map((currentMode) => (
               <button
-                key={m}
+                key={currentMode}
                 type="button"
                 onClick={() => {
-                  setMode(m);
+                  setMode(currentMode);
                   setError(null);
                 }}
                 className={`flex-1 h-9 rounded-lg text-xs font-black capitalize transition-all duration-200 ${
-                  mode === m
+                  mode === currentMode
                     ? "bg-white text-[#1B4332] shadow-sm"
                     : "text-[#0D1F17]/50 hover:text-[#0D1F17]"
                 }`}
               >
-                {m === "login" ? "Sign In" : "Sign Up"}
+                {currentMode === "login" ? "Sign In" : "Sign Up"}
               </button>
             ))}
           </div>
 
-          {/* Form */}
           <form
             onSubmit={handleSubmit}
             className="bg-white rounded-2xl border border-[#1B4332]/10 shadow-sm p-5 flex flex-col gap-4"
           >
-            {/* Error */}
             {error && (
               <div className="bg-[#FFF0F2] border border-[#FFCCD5] rounded-xl px-3 py-2.5 flex gap-2 text-[#D62839] text-xs font-semibold">
                 <svg
@@ -190,7 +193,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Signup only fields */}
             {mode === "signup" && (
               <>
                 <div className="flex flex-col gap-1.5">
@@ -224,7 +226,6 @@ export default function LoginPage() {
               </>
             )}
 
-            {/* Email */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-wide text-[#0D1F17]/60">
                 Email <span className="text-[#D62839]">*</span>
@@ -240,7 +241,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Password */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-wide text-[#0D1F17]/60">
                 Password <span className="text-[#D62839]">*</span>
@@ -250,17 +250,12 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={
-                  mode === "signup" ? "Min. 8 characters" : "Your password"
-                }
-                autoComplete={
-                  mode === "login" ? "current-password" : "new-password"
-                }
+                placeholder={mode === "signup" ? "Min. 8 characters" : "Your password"}
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
                 className="h-11 px-4 bg-[#F4F7F6] rounded-xl border border-[#1B4332]/10 text-sm font-semibold text-[#0D1F17] focus:outline-none focus:border-[#1B4332] focus:ring-1 focus:ring-[#1B4332]/20 transition-all placeholder-[#0D1F17]/30"
               />
             </div>
 
-            {/* Forgot password */}
             {mode === "login" && (
               <div className="text-right -mt-2">
                 <button
@@ -272,37 +267,28 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="h-12 w-full bg-[#1B4332] hover:bg-[#0D1F17] text-white font-black text-sm rounded-xl shadow-md transition-all active:scale-95 duration-150 flex items-center justify-center mt-1 disabled:opacity-60"
+              className="h-12 bg-[#1B4332] text-white rounded-xl font-black text-sm hover:bg-[#0D1F17] transition-all active:scale-95 disabled:opacity-60"
             >
-              {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : mode === "login" ? (
-                "Sign In to Viginyx"
-              ) : (
-                "Create My Account"
-              )}
+              {loading ? "Please wait..." : mode === "login" ? "Sign In to Viginyx" : "Create Viginyx Account"}
             </button>
 
-            {/* Terms for signup */}
-            {mode === "signup" && (
-              <p className="text-[10px] text-[#0D1F17]/40 text-center leading-relaxed">
-                By signing up you agree to Viginyx&apos;s Terms of Use and
-                Privacy Policy (DPDP Act 2023 compliant).
-              </p>
-            )}
+            <p className="text-[11px] text-[#0D1F17]/45 leading-relaxed text-center">
+              By signing up you agree to Viginyx&apos;s Terms of Use and Privacy Policy.
+            </p>
           </form>
 
-          {/* Pilot badge */}
-          <div className="text-center">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#1B4332]/50">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#52B788] animate-pulse" />
-              Pilot programme open · Kalyan-Dombivli pharmacies
-            </span>
-          </div>
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className="text-sm font-semibold text-[#1B4332] text-center hover:underline"
+            >
+              Need an account? Sign up
+            </button>
+          )}
         </div>
       </div>
     </div>

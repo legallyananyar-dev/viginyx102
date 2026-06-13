@@ -1,6 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import {
+  createPatientRecord,
+  subscribeToPatients,
+  updatePatientRecord,
+  type Answer,
+  type PatientRecord,
+} from "@/lib/patientStore";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type Role = "pharmacist" | "patient" | null;
@@ -11,24 +20,6 @@ type Screen =
   | "patient-room"
   | "patient-login"
   | "patient-chat";
-
-interface Patient {
-  code: string;
-  name: string;
-  age: string;
-  drug: string;
-  phone?: string;
-  registeredAt: Date;
-  status: "active" | "flagged" | "completed";
-  answers?: Answer[];
-  summary?: string;
-}
-
-interface Answer {
-  q: string;
-  a: string;
-  flag: boolean;
-}
 
 interface ChatMsg {
   role: "bot" | "patient";
@@ -100,6 +91,8 @@ function generateCode(): string {
 }
 
 // ── Severity badge ─────────────────────────────────────────────────────────────
+type Patient = PatientRecord;
+
 function StatusBadge({ status }: { status: Patient["status"] }) {
   const map = {
     active: "bg-blue-50 text-blue-700 border-blue-200",
@@ -121,6 +114,9 @@ export default function VigiRoom() {
   const [screen, setScreen] = useState<Screen>("landing");
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [ownerEmail, setOwnerEmail] = useState(
+    auth.currentUser?.email?.toLowerCase() || "mvp@viginyx.local",
+  );
 
   // Add patient form
   const [form, setForm] = useState({ name: "", age: "", drug: "", phone: "" });
@@ -143,19 +139,47 @@ export default function VigiRoom() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    return onAuthStateChanged(auth, (user) => {
+      setOwnerEmail(user?.email?.toLowerCase() || "mvp@viginyx.local");
+    });
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToPatients(ownerEmail, (nextPatients) => {
+      setPatients(nextPatients as Patient[]);
+      if (selectedPatient) {
+        const refreshed = nextPatients.find((patient) => patient.code === selectedPatient.code);
+        if (refreshed) {
+          setSelectedPatient(refreshed as Patient);
+        }
+      }
+      if (patientFound) {
+        const refreshed = nextPatients.find((patient) => patient.code === patientFound.code);
+        if (refreshed) {
+          setPatientFound(refreshed as Patient);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [patientFound, selectedPatient]);
+
   // ── Pharmacist: add patient ────────────────────────────────────────────────
-  const handleAddPatient = () => {
+  const handleAddPatient = async () => {
     if (!form.name || !form.age || !form.drug) return;
-    const p: Patient = {
+    const p: Omit<Patient, "id"> = {
+      ownerEmail,
       code: generateCode(),
       name: form.name,
       age: form.age,
       drug: form.drug,
       phone: form.phone,
-      registeredAt: new Date(),
+      registeredAt: new Date().toISOString(),
       status: "active",
+      answers: [],
     };
-    setPatients((prev) => [p, ...prev]);
+    await createPatientRecord(ownerEmail, p);
     setForm({ name: "", age: "", drug: "", phone: "" });
     setScreen("pharmacist-dashboard");
   };
@@ -258,13 +282,11 @@ Keep it warm, simple, and under 80 words total.`,
 
         // Update patient record
         const finalStatus: Patient["status"] = flagCount >= 2 ? "flagged" : "completed";
-        setPatients((prev) =>
-          prev.map((p) =>
-            p.code === patientFound.code
-              ? { ...p, status: finalStatus, answers: updatedAnswers, summary: botReply }
-              : p
-          )
-        );
+        await updatePatientRecord(ownerEmail, patientFound.code, {
+          status: finalStatus,
+          answers: updatedAnswers,
+          summary: botReply,
+        });
       } catch {
         setMessages((prev) => [
           ...prev,
