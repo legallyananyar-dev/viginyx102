@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useSearchParams } from "next/navigation";
@@ -112,7 +112,7 @@ function StatusBadge({ status }: { status: Patient["status"] }) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function VigiRoom() {
+function VigiRoomContent() {
   const searchParams = useSearchParams();
   const [role, setRole] = useState<Role>(null);
   const [screen, setScreen] = useState<Screen>("landing");
@@ -791,4 +791,18 @@ Keep it warm, simple, and under 80 words total.`,
   }
 
   return null;
+}
+
+export default function VigiRoom() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-8 text-center text-sm text-[#0D1F17]/50">
+          Loading patient check-in...
+        </div>
+      }
+    >
+      <VigiRoomContent />
+    </Suspense>
+  );
 }
