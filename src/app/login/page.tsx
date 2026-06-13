@@ -36,10 +36,10 @@ export default function LoginPage() {
         password === DEMO_CREDENTIALS.password
       ) {
         // success — redirect to app
-        router.push("/");
+        router.push("/portal");
       } else if (email && password) {
         // for pitchathon: accept any filled credentials as "registered"
-        router.push("/");
+        router.push("/portal");
       } else {
         setError("Please enter your email and password.");
         setLoading(false);
@@ -57,7 +57,7 @@ export default function LoginPage() {
         return;
       }
       // mock success — redirect
-      router.push("/");
+      router.push("/portal");
     }
   };
 
@@ -300,4 +300,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
