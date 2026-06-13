@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -72,12 +73,14 @@ export default function LoginPage() {
       {/* Top bar */}
       <div className="h-14 px-5 flex items-center justify-between border-b border-[#1B4332]/8 bg-white/80 backdrop-blur-sm">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#1B4332] flex items-center justify-center text-white font-black text-base shadow">
-            V
-          </div>
-          <span className="font-black text-lg text-[#1B4332] tracking-tight">
-            Viginyx
-          </span>
+          <Image
+            src="/viginyx-wordmark.png"
+            alt="Viginyx"
+            width={140}
+            height={40}
+            priority
+            className="h-7 w-auto"
+          />
         </Link>
         <Link
           href="/"
@@ -92,9 +95,14 @@ export default function LoginPage() {
         <div className="w-full max-w-sm flex flex-col gap-5">
           {/* Header */}
           <div className="text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#1B4332] flex items-center justify-center text-white font-black text-2xl shadow-lg mx-auto mb-4">
-              V
-            </div>
+            <Image
+              src="/viginyx-wordmark.png"
+              alt="Viginyx"
+              width={190}
+              height={54}
+              priority
+              className="h-12 w-auto mx-auto mb-4"
+            />
             <h1 className="text-2xl font-black text-[#0D1F17] tracking-tight">
               {mode === "login" ? "Welcome back" : "Create account"}
             </h1>

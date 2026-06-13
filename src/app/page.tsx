@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
@@ -82,12 +83,14 @@ export default function LandingPage() {
       >
         <div className="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#1B4332] flex items-center justify-center text-white font-black text-lg shadow">
-              V
-            </div>
-            <span className="font-black text-xl text-[#1B4332] tracking-tight">
-              Viginyx
-            </span>
+            <Image
+              src="/viginyx-wordmark.png"
+              alt="Viginyx"
+              width={150}
+              height={43}
+              priority
+              className="h-8 w-auto"
+            />
           </div>
           <div className="flex items-center gap-3">
             <Link

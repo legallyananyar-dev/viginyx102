@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
@@ -33,11 +34,15 @@ export default function RootLayout({
           <header className="sticky top-0 z-50 nav-glass border-b border-primary/10">
             <div className="mx-auto max-w-lg px-4 h-16 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform duration-200">
-                  V
-                </div>
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-xl tracking-tight text-primary leading-none">Viginyx</span>
+                <Image
+                  src="/viginyx-wordmark.png"
+                  alt="Viginyx"
+                  width={140}
+                  height={40}
+                  priority
+                  className="h-8 w-auto group-hover:opacity-90 transition-opacity duration-200"
+                />
+                <div className="flex flex-col leading-none">
                   <span className="text-[10px] text-primary/70 font-semibold tracking-wider uppercase mt-0.5">Pharmacist Suite</span>
                 </div>
               </Link>
