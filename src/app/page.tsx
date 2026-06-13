@@ -191,12 +191,6 @@ export default function LandingPage() {
             >
               See the problem
             </a>
-            <Link
-              href="/vigiroom"
-              className="inline-flex items-center justify-center h-12 px-7 rounded-xl border border-[#1B4332]/20 bg-white text-[#1B4332] font-bold text-sm hover:bg-[#1B4332]/5 transition-colors"
-            >
-              Open VigiRoom
-            </Link>
           </div>
         </div>
 
